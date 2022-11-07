@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+ <mapper namespace="com.petcare.mapper.InfoMapper"> 
+  	<select id="list" resultType="Info">
+	    select * from NOTICE order by length(n_seq) desc,n_seq desc
+	</select>
+	<select id="listpin" resultType="Info">
+		select * from NOTICE where pin=1 order by length(n_seq) desc,n_seq desc
+	</select>
+	<insert id="insert" parameterType="Info">
+		insert into NOTICE values('INFO'||notice_seq.nextval, #{title}, #{admin}, #{content}, default, default, #{pin})
+	</insert>
+	<delete id="delete" parameterType="java.lang.String">
+		delete from NOTICE where N_SEQ=#{n_seq}
+	</delete>
+	<update id="update" parameterType="Info">
+		update NOTICE set TITLE=#{title}, ADMIN=#{admin}, CONTENT=#{content}, UDATE=SYSDATE, pin=#{pin} where N_SEQ=#{n_seq}
+	</update>
+	<select id="content" parameterType="String" resultType="Info">
+		select * from NOTICE where N_SEQ=#{n_seq}
+	</select>
+	<select id="selectCount" resultType="long">
+		select nvl(max(ROWNUM),0) from NOTICE
+	</select>
+	<select id="selectCountpin" resultType="long">
+		select nvl(max(ROWNUM),0) from NOTICE where pin=1
+	</select>
+	<select id="selectPerPage" resultType="Info" parameterType="InfoVo">
+		<![CDATA[
+		select * from (select ROWNUM rnum, aa. * from (select * from NOTICE where pin=0 order by length(n_seq) desc,n_seq desc) aa)
+		where rnum>#{startRow} and rnum<=#{endRow}
+		]]>
+	</select>
+	<select id="selectCountBySearch" resultType="long" parameterType="InfoVo">
+		select nvl(max(ROWNUM),0) from NOTICE where ${catgo} like '%'||#{keyword}||'%'
+	</select>
+	<select id="selectPerPageBySearch" resultType="Info" parameterType="InfoVo">
+		<![CDATA[
+		select * from (select ROWNUM rnum, aa.* from (select * from NOTICE where upper(${catgo}) like upper('%'||#{keyword}||'%') and pin=0 order by length(n_seq) desc, n_seq desc) aa)
+		where rnum>#{startRow} and rnum<=#{endRow}
+		]]>
+	</select>
+ </mapper> 

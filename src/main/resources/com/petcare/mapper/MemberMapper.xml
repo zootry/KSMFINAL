@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+ <mapper namespace="com.petcare.mapper.MemberMapper"> 
+  	<insert id="signupM" parameterType="Member">
+  		insert into MEMBER values('M'||MEMBER_SEQ.nextval, #{email}, #{pwd}, #{nickname}, #{agree},
+  		#{name}, #{phone}, #{gender}, null, 0, SYSDATE, 0, 0) <!-- 회원가입시 주소값 안받을시 -->
+  	</insert>
+  	<select id='checkEmail' resultType='String' parameterType='String'>
+  		select EMAIL from MEMBER where EMAIL=#{email}
+  	</select>
+  	<select id='checkNick' resultType='String' parameterType='String'>
+  		select NICKNAME from MEMBER where NICKNAME=#{nickname}
+  	</select>
+  	<select id='checkLogin' resultType='Member'>
+  		select * from MEMBER where EMAIL=#{email}
+  	</select>
+  	<select id='getMyinfo' resultType='Member'>
+  		select * from MEMBER where M_SEQ=#{m_seq}
+  	</select>
+  	<update id='updateM' parameterType="Member">
+  		update MEMBER set PWD=#{pwd}, NICKNAME=#{nickname}, PHONE=#{phone} where M_SEQ=#{m_seq}
+  	</update>
+  	<delete id="deleteM" parameterType="String">
+  		delete MEMBER where M_SEQ=#{m_seq}
+  	</delete>
+  	<select id='getNickname' resultType='String' parameterType='String'>
+  		select NICKNAME from MEMBER where EMAIL=#{email}
+  	</select>
+  	<update id='resetPwd' parameterType="map">
+  		update MEMBER set PWD=#{pwd} where EMAIL=#{email}
+  	</update>
+  	<select id='userlist' resultType='Member'> 
+  		select * from MEMBER order by length(m_seq) desc, m_seq desc
+  	</select>
+  	<update id='userupdate' parameterType="Member">
+  		update MEMBER set EMAIL=#{email}, NICKNAME=#{nickname}, PHONE=#{phone}, ADDR=#{addr}, SAT=#{sat} where M_SEQ=#{m_seq}
+  	</update>
+  	<select id='userbyemail' parameterType="String" resultType="Member">
+  		select * from MEMBER where EMAIL=#{email}
+  	</select>
+  	<select id="selectCount" resultType="long">
+  		select nvl(max(ROWNUM),0) from MEMBER
+  	</select>
+  	<select id="selectPerPage" resultType="Member" parameterType="MemberVo">
+  		<![CDATA[
+  			select * from (select ROWNUM rnum, aa. * from (select * from MEMBER order by length(m_seq) desc, m_seq desc) aa)
+  			where rnum>#{startRow} and rnum<=#{endRow}
+  		]]>
+  	</select>
+  	<select id="selectCountBySearch" resultType="long" parameterType="MemberVo">
+  		select nvl(max(ROWNUM),0) from MEMBER where ${catgo} like '%'||#{keyword}||'%'
+  	</select>
+  	<select id="selectPerPageBySearch" resultType="Member" parameterType="MemberVo">
+  		<![CDATA[
+  		select * from (select ROWNUM rnum, aa.* from (select * from MEMBER where upper(${catgo}) like upper('%'||#{keyword}||'%') order by length(m_seq) desc, m_seq desc) aa)
+  		where rnum>#{startRow} and rnum<=#{endRow}
+  		]]>
+  	</select>
+  	<select id='getemail' resultType='String' parameterType='String'>
+  		select EMAIL from MEMBER where NICKNAME=#{nickname}
+  	</select>
+  	<update id="updateMemberStar" parameterType="CareReview">
+		update member set sat=ROUND((select sum(star) from carereview where dolbomyemail=#{dolbomyEmail})/
+		(select count(*) from carereview where dolbomyemail=#{dolbomyEmail}),2) where email=#{dolbomyEmail}
+	</update>
+	<select id="selectDolbomyInfo" parameterType="String" resultType="Member">
+		select a.*,b.reviews,c.dongname addr from (select nickname,sat,give,take,email from member)a, (select count(*) reviews,dolbomyemail from carereview where dolbomyemail=#{email} group by dolbomyemail)b,
+		(select dongname,useremail from mydong where useremail=#{email})c where a.email=b.dolbomyemail(+) and a.email=c.useremail(+) 
+		and a.email=#{email}
+	</select>
+	<select id="countPets" parameterType="String" resultType="_int">
+		select count(*) from pet where email=#{email}
+	</select>
+ </mapper> 

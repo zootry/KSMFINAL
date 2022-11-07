@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+ <mapper namespace="com.petcare.mapper.GalleryMapper"> 
+  	<select id="galleryList" resultType="Gallery">
+  		select a.*, nvl(b.likes,0) likes, nickname from 
+		(select * from gallery) a, 
+		(select b_seq, count(*) likes from likeslist group by b_seq) b, 
+		(select email, nickname from member)c 
+		where a.g_seq = b.b_seq(+) and a.email=c.email order by length(g_seq)desc, g_seq desc
+	</select>
+	<select id="galleryMyList" resultType="Gallery" parameterType="String">
+		select a.*, nvl(b.likes,0) likes, nickname from 
+		(select * from gallery) a, 
+		(select b_seq, count(*) likes from likeslist group by b_seq) b, 
+		(select email, nickname from member)c 
+		where a.g_seq = b.b_seq(+) and a.email=c.email and a.EMAIL=#{email} order by length(g_seq)desc, g_seq desc	    
+	</select>
+	<insert id="galleryWrite" parameterType="Gallery">
+		insert into GALLERY (g_seq, email, content) values ('G'||gallery_SEQ.nextval, #{email}, #{content})
+	</insert>
+	<delete id="galleryDelete" parameterType="String">
+		delete GALLERY where G_SEQ=#{g_seq} 
+	</delete>
+	<update id="galleryUpdate" parameterType="Gallery">
+		update GALLERY set CONTENT=#{content} where G_SEQ=#{g_seq} 
+	</update>
+	<select id="gUpdateList" resultType="Gallery" parameterType="String">
+	    select * from GALLERY where G_SEQ=#{g_seq}
+	</select>
+	<select id="galleryContent" resultType="Gallery" parameterType="String">
+	    select a.*, b.likes, c.nickname from Gallery a, 
+		(select count(*) likes from likeslist where b_seq=#{g_seq}) b, 
+		(select email, nickname from member) c where a.g_seq=#{g_seq} and a.email(+)=c.email
+	</select>
+ </mapper> 

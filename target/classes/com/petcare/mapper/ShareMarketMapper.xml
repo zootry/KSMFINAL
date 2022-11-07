@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.petcare.mapper.ShareMarketMapper"> 
+	<select id="selectShareMarketLists" parameterType="ListVo" resultType="ShareMarket">
+		select * from (select rownum rnum, d.* from 
+		(select a.*, nvl(b.likes,0) likes, nickname from (select * from sharemarket) a, 
+		(select b_seq, count(*) likes from likeslist group by b_seq) b, 
+		(select email, nickname from member)c 
+ 		where a.sm_seq = b.b_seq(+) and a.email=c.email
+ 		<if test="region.size() != 0"> 
+ 		and location in
+ 		<foreach collection="region" item="region" index="idx" separator="," open="(" close=")">
+ 		#{region}
+ 		</foreach></if> order by length(sm_seq)desc, sm_seq desc) d) <![CDATA[where rnum>#{startRowPerPage} and rnum<=#{endRowPerPage}]]>
+	</select>
+	
+	<select id="selectTotalRowCounts" parameterType="java.util.List" resultType="long">
+		select count(*) from ShareMarket 
+		<if test="list.size() != 0">
+		where location in
+		<foreach collection="list" item="region" index="idx" separator="," open="(" close=")">
+		#{region}
+		</foreach>
+		</if>
+	</select>
+	
+	<select id="selectShareMarketSearchLists" parameterType="ListVo" resultType="ShareMarket">
+		select * from (select rownum rnum, d.* from 
+		(select a.*, nvl(b.likes,0) likes, nickname from (select * from sharemarket) a, 
+		(select b_seq, count(*) likes from likeslist group by b_seq) b, 
+		(select email, nickname from member)c 
+ 		where a.sm_seq = b.b_seq(+) and a.email=c.email
+ 		<choose> 
+ 		<when test='"tc".equals(key)'>
+ 		and title like '%'||#{word}||'%' and content like '%'||#{word}||'%'
+ 		</when>
+ 		<otherwise>
+ 		and ${key} like '%'||#{word}||'%'
+ 		</otherwise>
+ 		</choose>
+ 		<if test="region.size() != 0">
+ 		and location in
+ 		<foreach collection="region" item="region" index="idx" separator="," open="(" close=")">
+ 		#{region}
+ 		</foreach></if>
+ 		order by length(sm_seq)desc, sm_seq desc) d) <![CDATA[where rnum>#{startRowPerPage} and rnum<=#{endRowPerPage}]]>
+	</select>
+	
+	<select id="selectTotalSearchRowCounts" resultType="long" parameterType="listVo">
+		select count(*) from (select rownum rnum, d.* from 
+		(select a.*, nvl(b.likes,0) likes, nickname from (select * from sharemarket) a, 
+		(select b_seq, count(*) likes from likeslist group by b_seq) b, 
+		(select email, nickname from member)c 
+ 		where a.sm_seq = b.b_seq(+) and a.email=c.email 
+ 		<choose> 
+ 		<when test='"tc".equals(key)'>
+ 		and title like '%'||#{word}||'%' and content like '%'||#{word}||'%'
+ 		</when>
+ 		<otherwise>
+ 		and ${key} like '%'||#{word}||'%'
+ 		</otherwise>
+ 		</choose>
+ 		<if test="region.size() != 0">
+		and location in
+		<foreach collection="region" item="region" index="idx" separator="," open="(" close=")">
+		#{region}
+		</foreach>
+		</if> order by length(sm_seq)desc, sm_seq desc) d)
+	</select>
+	
+	<select id="selectShareMarketContents" parameterType="String" resultType="ShareMarket">
+		select a.*, b.likes, c.nickname from sharemarket a, 
+		(select count(*) likes from likeslist where b_seq=#{sm_seq}) b, 
+		(select email, nickname from member) c where a.sm_seq=#{sm_seq} and a.email(+)=c.email
+	</select>
+	
+	<insert id="insertShareMarketContents" parameterType="ShareMarket">
+		insert into ShareMarket(sm_seq, title, email, location, category, content, price) 
+		values('SM'||sharemarket_seq.nextval, #{title}, #{email}, #{location}, #{category}, #{content}, #{price})
+	</insert>
+	
+	<update id="updateShareMarketContents" parameterType="ShareMarket">
+		update ShareMarket set category=#{category}, title=#{title}, content=#{content}, wdate=sysdate, price=#{price} where sm_seq=#{sm_seq}
+	</update>
+	
+	<delete id="deleteShareMarketContents" parameterType="String">
+		delete ShareMarket where sm_seq=#{sm_seq}
+	</delete>
+	
+	<select id="selectPrevAndNext" parameterType="ListVo" resultType="PrevAndNext">
+		select "prevSeq", "nextSeq", "prevFname", "nextFname"
+		from (select lag(SM_SEQ, 1, 0) over (order by ROWNUM) as "prevSeq", 
+		lead(SM_SEQ, 1, 0) over(order by ROWNUM) as "nextSeq",
+		lag(FNAME, 1, 0) over(order by ROWNUM) as "prevFname",
+		lead(FNAME, 1, 0) over(order by ROWNUM) as "nextFname",
+		aa.*
+		from (select a.*, b.fname, b.rnum from sharemarket a, 
+		(select * from (select row_number() over(partition by b_seq order by b_seq desc) rnum, b_seq, fname from files) where rnum=1) b
+		where a.sm_seq=b.b_seq(+)
+		<if test="region.size() != 0">
+		and location in 
+		<foreach collection="region" item="region" index="idx" separator="," open="(" close=")">
+		#{region}
+		</foreach></if> 
+		order by length(sm_seq)desc, sm_seq desc)aa) where sm_seq=#{b_seq} 
+	</select>
+	
+	<update id="updateShareMarketViews" parameterType="String">
+		update ShareMarket set views=views+1 where sm_seq=#{sm_seq}
+	</update>
+</mapper>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+ <mapper namespace="com.petcare.mapper.ReportMapper"> 
+  	<select id="list" resultType="Report">
+	    select * from REPORT order by length(rep_seq) desc, REP_SEQ desc
+	</select>
+	<insert id="insert" parameterType="Report">
+		insert into REPORT values(report_seq.nextval, #{rep_content}, #{rep_remail}, #{rep_wemail}, #{rep_reason}, #{rep_wseq}, #{rep_state}, default, default)
+	</insert>
+	<update id="update">
+		update REPORT set REP_STATE=#{rep_state}, REP_PDATE=SYSDATE where REP_SEQ=#{rep_seq}
+	</update>
+	<delete id="delete" parameterType="long">
+		delete from REPORT where REP_SEQ=#{rep_seq}
+	</delete>
+	<select id="content" parameterType="long" resultType="Report">
+		select * from REPORT where REP_SEQ=#{rep_seq}
+	</select>
+	<select id="listsearch" resultType="Report">
+		select * from REPORT where #{category}='%'||#{keyword}||'%' order by length(REP_SEQ) desc, REP_SEQ desc
+	</select>
+	<select id="selectCount" resultType="long">
+		select nvl(max(ROWNUM),0) from REPORT
+	</select>
+	<select id="selectPerPage" resultType="Report" parameterType="ReportVo">
+	<![CDATA[
+	select * from (select ROWNUM rnum, aa. * from (select * from Report order by length(rep_seq) desc, rep_seq desc) aa)
+	where rnum>#{startRow} and rnum<=#{endRow}
+	]]>
+	</select>
+	<select id="selectCountBySearch" resultType="long" parameterType="ReportVo">
+	     select nvl(max(ROWNUM),0) from Report where ${catgo} like '%'||#{keyword}||'%' and REP_STATE like '%'||#{rep_state}||'%'
+	</select>
+	<select id="selectPerPageBySearch" resultType="Report" parameterType="ReportVo">
+	     <![CDATA[
+	     select * from (select ROWNUM rnum, aa.* from (select * from Report where upper(${catgo}) like upper('%'||#{keyword}||'%') and REP_STATE like '%'||#{rep_state}||'%' order by length(rep_seq) desc, rep_seq desc, ${catgo} desc) aa)
+	     where rnum>#{startRow} and rnum<=#{endRow}
+	     ]]>
+	</select>
+ </mapper> 

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+ <mapper namespace="com.petcare.mapper.DolbomMapper"> 
+	<select id="content" resultType="Dolbom" parameterType="String">
+	    select a.*, nvl(b.chat,0) chat, nvl(c.likes,0) likes from (select * from DOLBOM) a, 
+	    (select c_b_seq_offer,count(*) chat from chatting group by c_b_seq_offer) b, 
+	    (select b_seq, count(*) likes from likeslist group by b_seq) c 
+	    where a.dol_seq = b.c_b_seq_offer(+) and a.dol_seq = c.b_seq(+) and a.dol_seq=#{dol_seq}
+	</select>
+	<insert id="insertDolbom" parameterType="Dolbom">
+		insert into DOLBOM values('DOL'||DOLBOM_SEQ.nextval,#{category},#{header},#{content},#{kind},#{region},#{workdate,jdbcType=DATE},#{workday},#{workstime},#{worketime},#{tag},#{state},SYSDATE,#{nickname},#{email})
+	</insert>
+	<select id="selectDList" resultType="Dolbomlist" parameterType="String">
+	    select * from DOLBOMLIST where SENDEREMAIL=#{email} or RECEIVEREMAIL=#{email} order by rdate desc
+	</select>
+	<select id="selectforComt" resultType="Dolbomlist" parameterType="long">
+	    select * from DOLBOMLIST where DL_SEQ=#{dl_seq}
+	</select>			
+	<update id="setStateContinue" parameterType="long">
+		update DOLBOMLIST set STATE='진행중' where DL_SEQ=#{DL_SEQ}
+	</update>
+	<update id="setStateFinish" parameterType="long">
+		update DOLBOMLIST set STATE='완료' where DL_SEQ=#{DL_SEQ}
+	</update>
+	<select id="selectDolSeq" resultType="String" parameterType="long">
+	    select dseq from DOLBOMLIST where DL_SEQ=#{dl_seq}
+	</select>
+	<update id="setStateContinueDolbom" parameterType="String">
+		update DOLBOM set STATE='진행중' where DOL_SEQ=#{dol_seq}
+	</update>
+	<update id="setStateFinishDolbom" parameterType="String">
+		update DOLBOM set STATE='완료' where DOL_SEQ=#{dol_seq}
+	</update>
+	<delete id="deleteList" parameterType="long">
+		delete from DOLBOMLIST where DL_SEQ=#{DL_SEQ}
+	</delete>
+	<insert id="insertDolbomList" parameterType="Dolbomlist">
+		insert into DOLBOMLIST values(DOLBOMLIST_SEQ.nextval,#{category},#{state},#{sendernick},#{senderemail},#{receivernick},#{receiveremail},SYSDATE,#{workdate},#{kind},#{dseq},#{dolbomy},#{requester})
+	</insert>
+	<select id="selectTime" resultType="Dolbom" parameterType="String">
+	    select header,kind,dol_seq from DOLBOM where email=#{email} and category='요청' and state='대기중'
+	</select>
+	<update id="updateDolbom" parameterType="Dolbom">
+		update DOLBOM set header=#{header},content=#{content},kind=#{kind},region=#{region}, workdate=#{workdate},workday=#{workday},workstime=#{workstime},worketime=#{worketime},tag=#{tag} where DOL_SEQ=#{dol_seq}
+	</update>
+	<delete id="deleteDolbom" parameterType="String">
+		delete from DOLBOM where DOL_SEQ=#{dol_seq}
+	</delete>
+	<select id="selectTag" resultType="Tag" parameterType="String">
+	    select * from TAG where DOL_SEQ=#{dol_seq}
+	</select>
+	<update id="updateTag" parameterType="Tag">
+		update TAG set neighbor=#{neighbor},meeting=#{meeting},cut=#{cut},bigcare=#{bigcare} where DOL_SEQ=#{dol_seq}
+	</update>
+	
+	<!-- 검색 -->
+	<select id="searchOption" resultType="Dolbom" parameterType="ListVo">
+		select * from (select ROWNUM rnum, aa.* from 
+		(select a.*, nvl(b.chat,0) chat, nvl(c.likes,0) likes from (select * from DOLBOM) a,
+	    (select c_b_seq_offer,count(*) chat from chatting group by c_b_seq_offer) b,
+	    (select b_seq, count(*) likes from likeslist group by b_seq) c 
+	    where a.dol_seq = b.c_b_seq_offer(+) and a.dol_seq = c.b_seq(+) and 
+	    category like '%'||#{category}||'%' and kind like '%'||#{kind}||'%' and workstime like #{stime}||'%' and worketime like #{etime}||'%' and 
+	    dol_seq in (select dol_seq from TAG where neighbor like '%'||#{neighbor}||'%' and meeting like '%'||#{meeting}||'%' and cut like '%'||#{cut}||'%' and bigcare like '%'||#{bigcare}||'%') 
+	    and region in 
+		<foreach collection="region" item="region" index="idx" separator="," open="(" close=")">
+    	#{region}
+    	</foreach> order by wdate desc) aa) where rnum<![CDATA[>]]>#{startRowPerPage} and rnum<![CDATA[<=]]>#{endRowPerPage}
+	</select>
+	<select id="searchOptionDate" resultType="Dolbom" parameterType="ListVo">
+	    select * from (select ROWNUM rnum, aa.* from 
+	    (select a.*, nvl(b.chat,0) chat, nvl(c.likes,0) likes from (select * from DOLBOM) a,
+	    (select c_b_seq_offer,count(*) chat from chatting group by c_b_seq_offer) b,
+	    (select b_seq, count(*) likes from likeslist group by b_seq) c 
+	    where a.dol_seq = b.c_b_seq_offer(+) and a.dol_seq = c.b_seq(+) and 
+		category like '%'||#{category}||'%' and kind like '%'||#{kind}||'%' and workstime like #{stime}||'%' and worketime like #{etime}||'%' and 
+	    dol_seq in (select dol_seq from TAG where neighbor like '%'||#{neighbor}||'%' and meeting like '%'||#{meeting}||'%' and cut like '%'||#{cut}||'%' and bigcare like '%'||#{bigcare}||'%')  
+	    and ((category='제공' and workday like '%'||#{workday}||'%') or (category='요청' and workdate=#{workdate})) 
+	    and region in 
+		<foreach collection="region" item="region" index="idx" separator="," open="(" close=")">
+    	#{region}
+    	</foreach> order by wdate desc) aa) where rnum<![CDATA[>]]>#{startRowPerPage} and rnum<![CDATA[<=]]>#{endRowPerPage}
+	</select>
+	<select id="searchAllOption" resultType="Dolbom" parameterType="ListVo">
+		select * from (select ROWNUM rnum, aa.* from 
+		(select a.*, nvl(b.chat,0) chat, nvl(c.likes,0) likes from (select * from DOLBOM) a,
+	    (select c_b_seq_offer,count(*) chat from chatting group by c_b_seq_offer) b,
+	    (select b_seq, count(*) likes from likeslist group by b_seq) c 
+	    where a.dol_seq = b.c_b_seq_offer(+) and a.dol_seq = c.b_seq(+) and 
+	    category like '%'||#{category}||'%' and kind like '%'||#{kind}||'%' and workstime like #{stime}||'%' and worketime like #{etime}||'%' and 
+	    dol_seq in (select dol_seq from TAG where neighbor like '%'||#{neighbor}||'%' and meeting like '%'||#{meeting}||'%' and cut like '%'||#{cut}||'%' and bigcare like '%'||#{bigcare}||'%')  
+	    order by wdate desc) aa) where rnum<![CDATA[>]]>#{startRowPerPage} and rnum<![CDATA[<=]]>#{endRowPerPage}
+	</select>
+	<select id="searchAllOptionDate" resultType="Dolbom" parameterType="ListVo">
+	    select * from (select ROWNUM rnum, aa.* from 
+	    (select a.*, nvl(b.chat,0) chat, nvl(c.likes,0) likes from (select * from DOLBOM) a,
+	    (select c_b_seq_offer,count(*) chat from chatting group by c_b_seq_offer) b,
+	    (select b_seq, count(*) likes from likeslist group by b_seq) c 
+	    where a.dol_seq = b.c_b_seq_offer(+) and a.dol_seq = c.b_seq(+) and 
+	    category like '%'||#{category}||'%' and kind like '%'||#{kind}||'%' and workstime like #{stime}||'%' and worketime like #{etime}||'%' and 
+	    dol_seq in (select dol_seq from TAG where neighbor like '%'||#{neighbor}||'%' and meeting like '%'||#{meeting}||'%' and cut like '%'||#{cut}||'%' and bigcare like '%'||#{bigcare}||'%')  
+	    and ((category='제공' and workday like '%'||#{workday}||'%') or (category='요청' and workdate=#{workdate})) 
+	    order by wdate desc) aa) where rnum<![CDATA[>]]>#{startRowPerPage} and rnum<![CDATA[<=]]>#{endRowPerPage}
+	</select>
+	<!-- 검색페이징 -->
+	<select id="selectSearchAllRCounts" resultType="long">
+		select NVL(max(ROWNUM), 0) from DOLBOM order by wdate desc
+	</select>
+	<select id="selectSearchDongRCounts" resultType="long" parameterType="java.util.List">
+		select NVL(max(ROWNUM), 0) from DOLBOM where region in 
+		<foreach collection="list" item="region" index="idx" separator="," open="(" close=")">
+    	#{region}
+    	</foreach> order by wdate desc
+	</select>
+	<select id="searchOptionRCounts" resultType="long">
+		select NVL(max(ROWNUM), 0) from DOLBOM 
+		where category like '%'||#{category}||'%' and kind like '%'||#{kind}||'%' and workstime like #{stime}||'%' and worketime like #{etime}||'%' and 
+	    dol_seq in (select dol_seq from TAG where neighbor like '%'||#{neighbor}||'%' and meeting like '%'||#{meeting}||'%' and cut like '%'||#{cut}||'%' and bigcare like '%'||#{bigcare}||'%') 
+	    and region in 
+		<foreach collection="region" item="region" index="idx" separator="," open="(" close=")">
+    	#{region}
+    	</foreach> order by wdate desc
+	</select>
+	<select id="searchOptionDateRCounts" resultType="long">
+		select NVL(max(ROWNUM), 0) from DOLBOM 
+		where category like '%'||#{category}||'%' and kind like '%'||#{kind}||'%' and workstime like #{stime}||'%' and worketime like #{etime}||'%' and 
+	    dol_seq in (select dol_seq from TAG where neighbor like '%'||#{neighbor}||'%' and meeting like '%'||#{meeting}||'%' and cut like '%'||#{cut}||'%' and bigcare like '%'||#{bigcare}||'%')  
+	    and ((category='제공' and workday like '%'||#{workday}||'%') or (category='요청' and workdate=#{workdate})) 
+	    and region in 
+		<foreach collection="region" item="region" index="idx" separator="," open="(" close=")">
+    	#{region}
+    	</foreach> order by wdate desc
+	</select>
+	<select id="searchAllOptionRCounts" resultType="long">
+		select NVL(max(ROWNUM), 0) from DOLBOM 
+		where category like '%'||#{category}||'%' and kind like '%'||#{kind}||'%' and workstime like #{stime}||'%' and worketime like #{etime}||'%' and 
+	    dol_seq in (select dol_seq from TAG where neighbor like '%'||#{neighbor}||'%' and meeting like '%'||#{meeting}||'%' and cut like '%'||#{cut}||'%' and bigcare like '%'||#{bigcare}||'%')  
+	    order by wdate desc
+	</select>
+	<select id="searchAllOptionDateRCounts" resultType="long">
+		select NVL(max(ROWNUM), 0) from DOLBOM 
+		where category like '%'||#{category}||'%' and kind like '%'||#{kind}||'%' and workstime like #{stime}||'%' and worketime like #{etime}||'%' and 
+	    dol_seq in (select dol_seq from TAG where neighbor like '%'||#{neighbor}||'%' and meeting like '%'||#{meeting}||'%' and cut like '%'||#{cut}||'%' and bigcare like '%'||#{bigcare}||'%')  
+	    and ((category='제공' and workday like '%'||#{workday}||'%') or (category='요청' and workdate=#{workdate})) 
+	    order by wdate desc
+	</select>
+	 <select id="selectSearchAllByPage" resultType="Dolbom" parameterType="ListVo">
+		<![CDATA[
+	     select * from (select ROWNUM rnum, aa.* from 
+	     (select a.*, nvl(b.chat,0) chat, nvl(c.likes,0) likes from (select * from DOLBOM) a,
+	     (select c_b_seq_offer,count(*) chat from chatting group by c_b_seq_offer) b, 
+	     (select b_seq, count(*) likes from likeslist group by b_seq) c 
+	     where a.dol_seq = b.c_b_seq_offer(+) and a.dol_seq = c.b_seq(+) order by wdate desc) aa) 
+	     where rnum>#{startRowPerPage} and rnum<=#{endRowPerPage}
+	     ]]>
+	</select>
+	<select id="selectSearchDongByPage" resultType="Dolbom" parameterType="ListVo">	
+	     select * from (select ROWNUM rnum, aa.* from 
+	     (select a.*, nvl(b.chat,0) chat, nvl(c.likes,0) likes from (select * from DOLBOM) a,
+	     (select c_b_seq_offer,count(*) chat from chatting group by c_b_seq_offer) b,
+	     (select b_seq, count(*) likes from likeslist group by b_seq) c  
+	     where a.dol_seq = b.c_b_seq_offer(+) and a.dol_seq = c.b_seq(+) and  
+	     region in 
+		<foreach collection="region" item="region" index="idx" separator="," open="(" close=")">
+    	#{region}
+    	</foreach> order by wdate desc) aa) where rnum<![CDATA[>]]>#{startRowPerPage} and rnum<![CDATA[<=]]>#{endRowPerPage}
+	</select>
+	
+	
+	<!-- 채팅관련 -->
+	<select id="chatEmail" resultType="String" parameterType="String">
+	    select email from DOLBOM where dol_seq=#{dol_seq}
+	</select>
+	<!-- 스케줄 -->
+	<select id="dolbomSchedule" resultType="Dolbomlist" parameterType="String">
+		select workdate,state from dolbomlist where dolbomy in (select email from dolbom where dol_seq=#{dol_seq}) and state='진행중'
+	</select>
+	<!-- 태그 -->
+	<insert id="insertTags" parameterType="Tag">
+		insert into Tag values(#{neighbor},#{meeting},#{cut},#{bigcare},'DOL'||DOLBOM_SEQ.currval)
+	</insert>
+	<!-- Give/Take -->
+	<update id="updateGive" parameterType="long">
+		update member set give=give+1 where email = (select dolbomy from dolbomlist where dl_seq=#{dl_seq})
+	</update>
+	<update id="updateTake" parameterType="long">
+		update member set take=take+1 where email = (select requester from dolbomlist where dl_seq=#{dl_seq})
+	</update>
+	<!-- ReviewList -->
+	<select id="reviewList" resultType="Dolbomlist" parameterType="String">
+	    select a.*, b.nickname from (select * from DOLBOMLIST)a, (select email,nickname from member)b where a.dolbomy=b.email(+) and a.requester=#{email} and (a.state='완료' or a.state='후기등록') order by a.rdate desc
+	</select>
+	<update id="finishReview" parameterType="long">
+		update dolbomlist set state='후기등록' where dl_seq=#{dl_seq}
+	</update>
+ </mapper> 

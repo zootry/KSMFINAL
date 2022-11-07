@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.petcare.mapper.CareReviewMapper">
+	<select id="selectList" resultType="CareReviewVo">
+		select a.*,b.*,c.dongname addr,d.reviews from (select * from carereview)a, (select m_seq,sat,give,take,email from member)b,(select dongname,useremail from mydong)c, (select count(*) reviews,dolbomyemail from carereview group by dolbomyemail)d 
+		where a.dolbomyemail=b.email(+) and b.email=c.useremail(+) and b.email=d.dolbomyemail(+) order by wdate desc
+	</select>
+	
+	<select id="selectBySeq" resultType="CareReview" parameterType="String">
+		select * from CAREREVIEW where CR_SEQ=#{cr_seq}
+	</select>
+	<select id="selectCount" resultType="long">
+		select nvl(max(ROWNUM), 0) from CAREREVIEW
+	</select>
+	<!-- 검색 Query문 -->
+	<select id= "selectSearch" resultType="CareReviewVo" parameterType="String">
+ 	    select a.*,b.*,c.dongname addr,d.reviews from (select * from carereview where ${category} like '%'||#{keyword}||'%')a, (select m_seq,sat,give,take,email from member)b,(select dongname,useremail from mydong)c, (select count(*) reviews,dolbomyemail from carereview group by dolbomyemail)d 
+		where a.dolbomyemail=b.email(+) and b.email=c.useremail(+) and b.email=d.dolbomyemail(+)
+ 	</select>
+	<!-- 최신순검색 -->
+ 	<select id= "rankingDate" resultType="CareReviewVo"> 
+ 		select a.*,b.*,c.dongname addr,d.reviews from (select * from carereview)a,
+ 		(select m_seq,sat,give,take,email from member)b,(select dongname,useremail from mydong)c,
+ 		(select count(*) reviews,dolbomyemail from carereview group by dolbomyemail)d 
+		where a.dolbomyemail=b.email(+) and b.email=c.useremail(+) and b.email=d.dolbomyemail(+) 
+		order by wdate desc, star desc 
+	</select>
+	<!-- 별점순검색 -->  
+ 	<select id= "rankingStar" resultType="CareReviewVo"> 
+ 		select a.*,b.*,c.dongname addr,d.reviews from (select * from carereview)a, 
+ 		(select m_seq,sat,give,take,email from member)b,(select dongname,useremail from mydong)c,
+ 		(select count(*) reviews,dolbomyemail from carereview group by dolbomyemail)d 
+		where a.dolbomyemail=b.email(+) and b.email=c.useremail(+) and b.email=d.dolbomyemail(+) 
+		order by star desc, wdate desc 
+	</select>   	
+ 	
+ 	<select id= "selectSearchAll" resultType="CareReviewVo" parameterType="String">
+ 	    select a.*,b.*,c.dongname addr,d.reviews from (select * from carereview where  and content like '%'||#{keyword}||'%' or dolbomy like '%'||#{keyword}||'%')a, (select m_seq,sat,give,take,email from member)b,(select dongname,useremail from mydong)c, (select count(*) reviews,dolbomyemail from carereview group by dolbomyemail)d 
+		where a.dolbomyemail=b.email(+) and b.email=c.useremail(+) and b.email=d.dolbomyemail(+)
+ 	</select>
+	<insert id="insert" parameterType="CareReview">
+		insert into CAREREVIEW
+		values('CR'||#{dl_seq}, #{content},#{writer},#{writerEmail},#{dolbomy},#{dolbomyEmail},#{star},SYSDATE)
+	</insert>
+	<update id="edit" parameterType="CareReview" >
+	 	update CAREREVIEW set CONTENT=#{content}, STAR=#{star} where CR_SEQ=#{cr_seq}
+	</update>
+	<delete id="delete" parameterType="String">
+		delete from CAREREVIEW where CR_SEQ=#{cr_seq}
+	</delete> 
+</mapper> 

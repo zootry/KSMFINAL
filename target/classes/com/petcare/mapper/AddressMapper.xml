@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+ <mapper namespace="com.petcare.mapper.AddressMapper"> 
+   <select id="selectByAddr" resultType="Address" parameterType="String">
+      select * from ADDRESS where ADDRESS_NAME like '%'||#{addr}||'%'
+   </select>
+   <select id="nearAddr" resultType="String" parameterType="Double">
+   		<![CDATA[select ADDRESS_NAME from ADDRESS WHERE (calc_distance(#{y},#{x}, Y, X))<=#{range}]]>
+   </select>
+   <insert id="settingDong" parameterType="MyDong">
+   		insert into MyDong values(MYDONG_SEQ.nextval,#{dongname},#{y},#{x},#{range},#{useremail})
+   </insert>
+   
+   <select id="selectMydong" resultType="String" parameterType="String">
+   		select DONGNAME from MYDONG where USEREMAIL=#{useremail} 
+   </select>
+   <select id="selectNeardong" resultType="String" parameterType="String">
+   		select NEARDNAME from NEARDONG where USEREMAIL=#{useremail} 
+   </select>
+   <select id="countNeardong" resultType="_int" parameterType="String">
+   		select count(*) from NEARDONG where USEREMAIL=#{useremail} 
+   </select>
+   
+   <insert id="settingNearDong" parameterType="NearDong">
+   		insert into NEARDONG values(#{neardname},#{useremail},MYDONG_SEQ.currval)
+   </insert>
+   <delete id="cancelDong" parameterType="String">
+		delete from MYDONG where useremail=#{useremail}
+   </delete>
+   
+   <!-- 근처동네 범위설정 -->
+   <update id="updateRange" parameterType="MyDong">
+   		update MYDONG set range=#{range} where useremail=#{useremail}
+   </update>
+   <select id="findMydong" resultType="MyDong" parameterType="String">
+   		select * from MYDONG where USEREMAIL=#{useremail} 
+   </select>
+   <delete id="cancelNearDong" parameterType="long">
+		delete from NEARDONG where dongno=#{dongno}
+   </delete> 
+   <insert id="setting2ndNearDong" parameterType="NearDong">
+   		insert into NEARDONG values(#{neardname},#{useremail},#{dongno})
+   </insert>
+   
+ </mapper> 
